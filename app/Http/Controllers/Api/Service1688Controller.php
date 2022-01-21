@@ -87,6 +87,7 @@ class Service1688Controller extends Controller{
                     'name_en' => $request->get('subject')['en'],
                     'price' => $request->get('prices')['fix'],
                     'price_type' => $request->get('prices')['price_type'],
+                    'stock' => $request->get('stock'),
                     'moq' => $request->get('moq'),
                     'cover' => $request->get('images')[0],
                     'weight' => $request->get('weight'),
@@ -113,7 +114,7 @@ class Service1688Controller extends Controller{
                 $variant->name_en = $value['name_en'];
                 $variant->cover = $value['image'];
                 $variant->save();
-                
+
                 if($product->variant_type == 'multiple_item'){
                     $variant->items()->createMany(collect($value['items'])->map(function($q)use($variant){
                             return [
