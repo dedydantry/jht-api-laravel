@@ -256,12 +256,19 @@ class Service1688Controller extends Controller{
                          return[
                              'finalUnitPrice' => $q->finalUnitPrice,
                              'specId' => isset($q->specId) ? $q->specId : null,
-                             'totalPrice' => $q->amount
+                             'to
+                             talPrice' => $q->amount
                          ];
                     })
                 ]);
             }
-            return response()->json(null);
+
+            if(isset($response->success) && $response->success === false){
+                return response()->json([
+                    'message' => $response->errorMsg
+                ]);
+            }
+            return response()->json(['message' => null]);
         } catch (\Exception $e) {
             throw $e;
             return response()->json([
