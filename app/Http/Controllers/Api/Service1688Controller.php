@@ -242,9 +242,27 @@ class Service1688Controller extends Controller{
             $codeSign = $this->generateSignature($query, $path);
             $query['_aop_signature'] =  $codeSign;
             $url = config('caribarang.host_1688') . $path;
+            $query['addressParam'] = json_encode($query['addressParam']);
+            $query['cargoParamList'] = json_encode($query['cargoParamList']);
+
             $post = Http::asForm()->post($url, $query);
             $response = $post->object();
-            return response()->json($response);
+            // return response()->json($response);
+
+            if(isset($response->orderPreviewResuslt)){
+                $response = $response->orderPreviewResuslt[0];
+                return response()->json([
+                    'warehouse_delivery_fee' => $response->sumPayment / 100,
+                    'order' => collect($response->cargoList)->map(function($q){
+                         return[
+                             'finalUnitPrice' => $q->finalUnitPrice,
+                             'specId' => $q->specId,
+                             'amount' => $q->amount
+                         ];
+                    })
+                ]);
+            }
+            return response()->json(null);
         } catch (\Exception $e) {
             throw $e;
             return response()->json([
