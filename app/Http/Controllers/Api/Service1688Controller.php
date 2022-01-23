@@ -230,9 +230,9 @@ class Service1688Controller extends Controller{
     {
         try {
             $order = $request->get('order');
-            $path = config('caribarang.host_1688') . 'param2/1/com.alibaba.trade/alibaba.createOrder.preview/' . config('caribarang.app_key_1688');
+            $path               = 'param2/1/com.alibaba.trade/alibaba.createOrder.preview/' . config('caribarang.app_key_1688');
             $accessToken = Service1688::token();
-            $query   = [
+            $query = [
                 'addressParam'      => config('warehouseaddress.greenline.address'),
                 'cargoParamList'    => $order,
                 'flow'              => 'general',
@@ -241,8 +241,8 @@ class Service1688Controller extends Controller{
 
             $codeSign = $this->generateSignature($query, $path);
             $query['_aop_signature'] =  $codeSign;
-
-            $post = Http::asForm()->post($path);
+            $url = config('caribarang.host_1688') . $path;
+            $post = Http::asForm()->post($url, $query);
             $response = $post->object();
             return response()->json($response);
         } catch (\Exception $e) {
