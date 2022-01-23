@@ -247,7 +247,6 @@ class Service1688Controller extends Controller{
 
             $post = Http::asForm()->post($url, $query);
             $response = $post->object();
-            // return response()->json($response);
 
             if(isset($response->orderPreviewResuslt)){
                 $response = $response->orderPreviewResuslt[0];
@@ -256,7 +255,7 @@ class Service1688Controller extends Controller{
                     'order' => collect($response->cargoList)->map(function($q){
                          return[
                              'finalUnitPrice' => $q->finalUnitPrice,
-                             'specId' => $q->specId,
+                             'specId' => isset($q->specId) ? $q->specId : null,
                              'totalPrice' => $q->amount
                          ];
                     })
