@@ -247,11 +247,11 @@ class Service1688Controller extends Controller{
 
             $post = Http::asForm()->post($url, $query);
             $response = $post->object();
-
             if(isset($response->orderPreviewResuslt)){
                 $response = $response->orderPreviewResuslt[0];
+                $warehouseDeliveryFee = $response->sumCarriage ? $response->sumCarriage : $response->sumPaymentNoCarriage;
                 return response()->json([
-                    'warehouse_delivery_fee' => $response->sumPayment / 100,
+                    'warehouse_delivery_fee' => $warehouseDeliveryFee / 100,
                     'order' => collect($response->cargoList)->map(function($q){
                          return[
                              'finalUnitPrice' => $q->finalUnitPrice,
