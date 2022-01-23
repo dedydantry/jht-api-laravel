@@ -12,6 +12,7 @@ use App\Models\Variant;
 use App\Services\Service1688;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 
 class Service1688Controller extends Controller{
@@ -37,9 +38,19 @@ class Service1688Controller extends Controller{
             ];
         }
 
-        $aliParams = array();
+        $codeSign = $this->generateSignature($queryNoSignature, $path);
 
-        foreach ($queryNoSignature as $key => $val) {
+        return response()->json([
+            'signature' => $codeSign, 
+            'access_token' => Service1688::token(), 
+            'path' => config('caribarang.host_1688') . $path,
+            'query' => $queryNoSignature
+        ]);
+    }
+
+    protected function generateSignature($params, $path)
+    {
+        foreach ($params as $key => $val) {
             if (is_array($val) OR is_object($val)) {
                 $aliParams[] = $key . json_encode($val);
                 continue;
@@ -51,12 +62,7 @@ class Service1688Controller extends Controller{
         $sign_str = join('', $aliParams);
         $sign_str = $path . $sign_str;
         $codeSign = strtoupper(bin2hex(hash_hmac("sha1", $sign_str,  config('caribarang.app_secret_1688'), true)));
-
-        return response()->json([
-            'signature' => $codeSign, 
-            'access_token' => Service1688::token(), 
-            'path' => config('caribarang.host_1688') . $path
-        ]);
+        return $codeSign;
     }
 
     public function store(Request $request)
@@ -218,5 +224,34 @@ class Service1688Controller extends Controller{
             'status' => true,
             'data' => 'message received'
         ]);
+    }
+
+    public function previewBeforeOrder(Request $request)
+    {
+        try {
+            $order = $request->get('order');
+            $path = config('caribarang.host_1688') . 'param2/1/com.alibaba.trade/alibaba.createOrder.preview/' . config('caribarang.app_key_1688');
+            $accessToken = Service1688::token();
+            $query   = [
+                'addressParam'      => config('warehouseaddress.greenline.address'),
+                'cargoParamList'    => $order,
+                'flow'              => 'general',
+                'access_token'      => $accessToken,
+            ];
+
+            $codeSign = $this->generateSignature($query, $path);
+            $query['_aop_signature'] =  $codeSign;
+
+            $post = Http::asForm()->post($path);
+            $response = $post->object();
+            return response()->json($response);
+        } catch (\Exception $e) {
+            throw $e;
+            return response()->json([
+                'status' => false,
+                'data' => $e->getMessage()
+            ]);
+        }
+
     }
 }

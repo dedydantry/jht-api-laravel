@@ -21,4 +21,5 @@ Route::group(['prefix' => '1688'], function(){
     Route::any('/refresh-token',[Service1688Controller::class, 'refreshToken'])->name('refreshToken');
     Route::any('/callback-message',[Service1688Controller::class, 'callbackMessage'])->name('callbackMessage');
     Route::any('/channel',[Service1688Controller::class, 'channel'])->name('channel');
+    Route::post('/preview-before-order', [Service1688Controller::class, 'previewBeforeOrder'])->name('previewBeforeOrder');
 });
