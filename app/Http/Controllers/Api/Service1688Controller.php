@@ -257,7 +257,7 @@ class Service1688Controller extends Controller{
                          return[
                              'finalUnitPrice' => $q->finalUnitPrice,
                              'specId' => $q->specId,
-                             'amount' => $q->amount
+                             'totalPrice' => $q->amount
                          ];
                     })
                 ]);
