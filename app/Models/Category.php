@@ -15,7 +15,8 @@ class Category extends Model
         'name',
         'name_en',
         'image',
-        'icon'
+        'icon',
+        'category_id_1688'
     ];
 
 }
