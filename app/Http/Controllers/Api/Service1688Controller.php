@@ -2,7 +2,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Category;
+use App\Models\Category1688;
 use App\Models\PriceRange;
 use App\Models\Product;
 use App\Models\ProductImage;
@@ -71,8 +71,8 @@ class Service1688Controller extends Controller{
            DB::beginTransaction();
            $paramsCategory = $request->get('category')['group'];
 
-           Category::upsert($paramsCategory, ['name']);
-           $category = Category::where('name', $request->get('category')['name_cn'])->first();
+           Category1688::upsert($paramsCategory, ['name']);
+           $category = Category1688::where('name', $request->get('category')['name_cn'])->first();
    
            $seller = Seller::firstOrCreate(
                ['seller_id_1688' => $request->get('seller_id')],
@@ -86,8 +86,9 @@ class Service1688Controller extends Controller{
                ['product_id_1688' => $request->get('product_id')],
                [
                     'seller_id' => $seller->id,
-                    'category_id' => $category ? $category->id : null,
+                    'category_id' =>  null,
                     'subcategory_id' => null,
+                    'category_id_1688' => $category ? $category->category_id_1688 : null,
                     'uuid' => (string) Str::uuid(),
                     'name' => $request->get('subject')['cn'],
                     'name_en' => $request->get('subject')['en'],

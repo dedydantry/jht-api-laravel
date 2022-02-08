@@ -16,6 +16,7 @@ class Product extends Model
         'seller_id',
         'category_id',
         'subcategory_id',
+        'category_id_1688',
         'product_id_1688',
         'uuid',
         'name',
