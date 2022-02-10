@@ -69,10 +69,10 @@ class Service1688Controller extends Controller{
     {
        try {
            DB::beginTransaction();
-           $paramsCategory = $request->get('category')['group'];
+           $reqCategory =  $request->get('category');
+           $paramsCategory = $reqCategory['group'];
 
            Category1688::upsert($paramsCategory, ['name']);
-           $category = Category1688::where('name', $request->get('category')['name_cn'])->first();
    
            $seller = Seller::firstOrCreate(
                ['seller_id_1688' => $request->get('seller_id')],
@@ -88,7 +88,7 @@ class Service1688Controller extends Controller{
                     'seller_id' => $seller->id,
                     'category_id' =>  null,
                     'subcategory_id' => null,
-                    'category_id_1688' => $category ? $category->category_id_1688 : null,
+                    'category_id_1688' => $reqCategory['id'] ?  $reqCategory['id'] : null,
                     'uuid' => (string) Str::uuid(),
                     'name' => $request->get('subject')['cn'],
                     'name_en' => $request->get('subject')['en'],
