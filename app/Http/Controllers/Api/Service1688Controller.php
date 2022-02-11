@@ -72,7 +72,7 @@ class Service1688Controller extends Controller{
            $reqCategory =  $request->get('category');
            $paramsCategory = $reqCategory['group'];
 
-           Category1688::upsert($paramsCategory, ['name']);
+           Category1688::upsert($paramsCategory, ['category_id_1688']);
    
            $seller = Seller::firstOrCreate(
                ['seller_id_1688' => $request->get('seller_id')],
