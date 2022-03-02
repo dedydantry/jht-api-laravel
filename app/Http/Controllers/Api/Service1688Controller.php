@@ -3,6 +3,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Category1688;
+use App\Models\Order;
+use App\Models\Payment1688;
 use App\Models\PriceRange;
 use App\Models\Product;
 use App\Models\ProductImage;
@@ -270,7 +272,6 @@ class Service1688Controller extends Controller{
             }
             return response()->json(['message' => null]);
         } catch (\Exception $e) {
-            throw $e;
             return response()->json([
                 'status' => false,
                 'data' => $e->getMessage()
@@ -279,24 +280,182 @@ class Service1688Controller extends Controller{
 
     }
 
-    public function createOrder(Request $request)
+    public function createOrder(Order $order)
+    {
+        try {
+            if($order->order_id_1688) return response()->json(['status' => false, 'data' => 'Order has created']);
+            $order->load(['cart.items']);
+            $productId = $order->cart->product_id_1688;
+            $accessToken = Service1688::token();
+    
+            $items = $order->cart->items->map(function($q)use($productId){
+                return[
+                    'specId' => $q->spec_id,
+                    'quantity' => $q->quantity,
+                    'offerId' => $productId
+                ];
+            });
+    
+            $path =  'param2/1/com.alibaba.trade/alibaba.trade.createCrossOrder/' . config('caribarang.app_key_1688');
+            $query = [
+                'addressParam' => config('warehouseaddress.shijing.address'),
+                'cargoParamList' => $items,
+                'tradeType' => 'fxassure',
+                'flow' => 'general',
+                'message' => sprintf(config('warehouseaddress.shijing.note'), $order->order_number),
+                'access_token'      => $accessToken,
+            ];
+    
+            $codeSign = $this->generateSignature($query, $path);
+            $query['_aop_signature'] =  $codeSign;
+            $query['addressParam'] = json_encode($query['addressParam']);
+            $query['cargoParamList'] = json_encode($query['cargoParamList']);
+    
+            $url = config('caribarang.host_1688') . $path;
+            $post = Http::asForm()->post($url, $query);
+            $response = $post->object();
+            if(isset($response->success) && $response->success === true){
+                $order->order_id_1688 = $response->result->orderId;
+                $order->save();
+
+                $total =  $response->result->totalSuccessAmount / 100;
+                $shipppingFee =  $response->result->postFee / 100;
+                $productPrice = $total - $shipppingFee;
+                $order->order1688()->create([
+                    'product_price' => $productPrice,
+                    'shipping_fee' => $shipppingFee,
+                    'total' => $total
+                ]);
+
+                return response()->json([
+                    'status' => true,
+                    'data' => $response
+                ]);
+            }
+    
+            return response()->json(['status' => false, 'data' => $response]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'data' => $e->getMessage()
+            ]);
+        }
+    }
+
+    public function viewOrder(Order $order)
+    {
+        try {
+            if(!$order->order_id_1688) return response()->json(['status' => false, 'data' => 'Invalid order_id_1688']);
+            $accessToken = Service1688::token();
+            $path =  'param2/1/com.alibaba.trade/alibaba.trade.get.buyerView/' . config('caribarang.app_key_1688');
+            $orderId = (int) $order->order_id_1688;
+            $query = [
+                'webSite'           => '1688',
+                'orderId'           => $orderId,
+                'access_token'      => $accessToken,
+            ];
+    
+            $codeSign = $this->generateSignature($query, $path);
+            $query['_aop_signature'] =  $codeSign;
+    
+            $url = config('caribarang.host_1688') . $path;
+            $post = Http::asForm()->post($url, $query);
+            $response = $post->object();
+        
+            return response()->json(['status'=>true, 'data' => $response]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'data' => $e->getMessage()
+            ]);
+        }
+       
+    }
+
+    public function cancelOrder(Order $order)
+    {
+        try {
+            if(!$order->order_id_1688) return response()->json(['status' => false, 'data' => 'Invalid order_id_1688']);
+            $accessToken = Service1688::token();
+            $path =  'param2/1/com.alibaba.trade/alibaba.trade.cancel/' . config('caribarang.app_key_1688');
+            $orderId = (int) $order->order_id_1688;
+            $query = [
+                'webSite' => '1688',
+                'tradeID' => $orderId,
+                'cancelReason' => 'sellerGoodsLack:卖家库存不足;',
+                'access_token' => $accessToken,
+            ];
+
+            $codeSign = $this->generateSignature($query, $path);
+            $query['_aop_signature'] =  $codeSign;
+    
+            $url = config('caribarang.host_1688') . $path;
+            $post = Http::asForm()->post($url, $query);
+            $response = $post->object();
+
+            if(isset($response->success) && $response->success === true) {
+                $order->order_id_1688 = null;
+                $order->save();
+                $order->order1688()->delete();
+                return response()->json([
+                    'status' => true,
+                    'data' => 'Success to cancel order'
+                ]);
+            }
+            
+
+            return response()->json([
+                'status' => false,
+                'data' => $response->errorMessage
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'data' => $e->getMessage()
+            ]);
+        }
+    }
+
+    public function payment(Request $request)
     {
         $validator = \Validator::make($request->all(), [
-            'orders' => 'array|required',
+            'order_list' => 'array|required',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'status' => false,
-                'message' => $validator->errors(),
+                'data' => $validator->errors(),
             ]);
         }
-        $query = [
-            'addressParam' => sprintf(config('warehouseaddress.shijing.address', )),
-            'cargoParamList' => $request->get('orders'),
-            'tradeType' => 'fxassure',
-            'flow' => 'general',
-            'message' =>  config('warehouseaddress.shijing.note')
-        ];
+
+       try {
+           $orderList = $request->get('order_list');
+           $accessToken = Service1688::token();
+            
+        //    $path =  'param2/1/com.alibaba.trade/alibaba.crossBorderPay.url.get/' . config('caribarang.app_key_1688');
+           $path =  'param2/1/com.alibaba.trade/alibaba.alipay.url.get/' . config('caribarang.app_key_1688');
+           $query = [
+               'orderIdList' => $orderList,
+               'access_token' => $accessToken
+           ];
+           $codeSign = $this->generateSignature($query, $path);
+           $query['_aop_signature'] =  $codeSign;
+           $query['orderIdList'] = json_encode($query['orderIdList']);
+           $url = config('caribarang.host_1688') . $path;
+           $post = Http::asForm()->post($url, $query);
+           $response = $post->object();
+           if(isset($response->success) && ($response->success == 'true' || $response->success === true) ) {
+               $payment = Payment1688::create(['link' => $response->payUrl]);
+               Order::whereIn('order_id_1688', $orderList)->update(['payment_1688_id' => $payment->id, 'bulk_payment_at' => now()]);
+               return response()->json(['status'=>true, 'data' => $payment]);
+           }
+           return response()->json(['status'=>false, 'data' => $response]);
+       } catch (\Exception $e) {
+           return response()->json([
+                'status' => false,
+                'data' => $e->getMessage()
+            ]);
+       }
     }
 }
