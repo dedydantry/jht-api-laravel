@@ -81,15 +81,15 @@ class Service1688Controller extends Controller{
                    'address' => $request->get('seller_address')
                ]
             );
-   
-           $product = Product::updateOrCreate(
-               ['product_id_1688' => $request->get('product_id')],
+            
+            $checkProduct = Product::select('id', 'uuid')->where('product_id_1688', $request->get('product_id'))->first();
+            $product = Product::updateOrCreate(
                [
                     'seller_id' => $seller->id,
                     'category_id' =>  null,
                     'subcategory_id' => null,
                     'category_id_1688' => $reqCategory['id'] ?  $reqCategory['id'] : null,
-                    'uuid' => (string) Str::uuid(),
+                    'uuid' => $checkProduct ? $checkProduct->uuid : (string) Str::uuid(),
                     'name' => $request->get('subject')['cn'],
                     'name_en' => $request->get('subject')['en'],
                     'price' => $request->get('prices')['fix'],
@@ -234,7 +234,7 @@ class Service1688Controller extends Controller{
             $path               = 'param2/1/com.alibaba.trade/alibaba.createOrder.preview/' . config('caribarang.app_key_1688');
             $accessToken = Service1688::token();
             $query = [
-                'addressParam'      => config('warehouseaddress.greenline.address'),
+                'addressParam'      => config('warehouseaddress.shijing.address'),
                 'cargoParamList'    => $order,
                 'flow'              => 'general',
                 'access_token'      => $accessToken,
@@ -277,5 +277,26 @@ class Service1688Controller extends Controller{
             ]);
         }
 
+    }
+
+    public function createOrder(Request $request)
+    {
+        $validator = \Validator::make($request->all(), [
+            'orders' => 'array|required',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => false,
+                'message' => $validator->errors(),
+            ]);
+        }
+        $query = [
+            'addressParam' => sprintf(config('warehouseaddress.shijing.address', )),
+            'cargoParamList' => $request->get('orders'),
+            'tradeType' => 'fxassure',
+            'flow' => 'general',
+            'message' =>  config('warehouseaddress.shijing.note')
+        ];
     }
 }
