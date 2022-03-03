@@ -252,9 +252,9 @@ class Service1688Controller extends Controller{
             $response = $post->object();
             if(isset($response->orderPreviewResuslt)){
                 $response = $response->orderPreviewResuslt[0];
-                $warehouseDeliveryFee = $response->sumCarriage ? $response->sumCarriage : $response->sumPaymentNoCarriage;
+                $warehouseDeliveryFee = $response->sumCarriage ? ($response->sumCarriage / 100) : 0;
                 return response()->json([
-                    'warehouse_delivery_fee' => $warehouseDeliveryFee / 100,
+                    'warehouse_delivery_fee' => $warehouseDeliveryFee,
                     'order' => collect($response->cargoList)->map(function($q){
                          return[
                              'finalUnitPrice' => $q->finalUnitPrice,
