@@ -2,9 +2,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Admin;
 use App\Models\Category1688;
 use App\Models\Order;
 use App\Models\Payment1688;
+use App\Models\Payment1688Log;
 use App\Models\PriceRange;
 use App\Models\Product;
 use App\Models\ProductImage;
@@ -305,7 +307,7 @@ class Service1688Controller extends Controller{
                 'message' => sprintf(config('warehouseaddress.shijing.note'), $order->order_number),
                 'access_token'      => $accessToken,
             ];
-    
+
             $codeSign = $this->generateSignature($query, $path);
             $query['_aop_signature'] =  $codeSign;
             $query['addressParam'] = json_encode($query['addressParam']);
@@ -420,6 +422,7 @@ class Service1688Controller extends Controller{
     {
         $validator = \Validator::make($request->all(), [
             'order_list' => 'array|required',
+            'email' => 'required'
         ]);
 
         if ($validator->fails()) {
@@ -444,10 +447,15 @@ class Service1688Controller extends Controller{
            $query['orderIdList'] = json_encode($query['orderIdList']);
            $url = config('caribarang.host_1688') . $path;
            $post = Http::asForm()->post($url, $query);
+           $admin = Admin::where('email', $request->get('email'))->first();
            $response = $post->object();
            if(isset($response->success) && ($response->success == 'true' || $response->success === true) ) {
                $payment = Payment1688::create(['link' => $response->payUrl]);
                Order::whereIn('order_id_1688', $orderList)->update(['payment_1688_id' => $payment->id, 'bulk_payment_at' => now()]);
+               Payment1688Log::create([
+                   'admin_id' => $admin ? $admin->id : 1,
+                   'action' => 'Generate payment link',
+               ]);
                return response()->json(['status'=>true, 'data' => $payment]);
            }
            return response()->json(['status'=>false, 'data' => $response]);
