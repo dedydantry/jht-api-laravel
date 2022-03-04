@@ -93,6 +93,7 @@ class Service1688Controller extends Controller{
                     'category_id' =>  null,
                     'subcategory_id' => null,
                     'category_id_1688' => $reqCategory['id'] ?  $reqCategory['id'] : null,
+                    'product_id_1688' => $request->get('product_id'),
                     'uuid' => $checkProduct ? $checkProduct->uuid : (string) Str::uuid(),
                     'name' => $request->get('subject')['cn'],
                     'name_en' => $request->get('subject')['en'],
