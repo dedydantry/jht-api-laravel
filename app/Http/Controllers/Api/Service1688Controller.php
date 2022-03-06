@@ -332,7 +332,7 @@ class Service1688Controller extends Controller{
 
                 return response()->json([
                     'status' => true,
-                    'data' => $response
+                    'data' => $order
                 ]);
             }
     
