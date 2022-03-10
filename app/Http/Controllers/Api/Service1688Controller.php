@@ -287,7 +287,7 @@ class Service1688Controller extends Controller{
     {
         try {
             if($order->order_id_1688) return response()->json(['status' => false, 'data' => 'Order has created']);
-            $order->load(['cart.items']);
+            $order->load(['cart.items', 'user.markingCode']);
             $productId = $order->cart->product_id_1688;
             $accessToken = Service1688::token();
     
@@ -298,14 +298,15 @@ class Service1688Controller extends Controller{
                     'offerId' => $productId
                 ];
             });
-    
+            
+            $noteReplace =  $order->user->markingCode ? $order->user->markingCode->marking_code . ' - ' .$order->order_number :  $order->order_number;
             $path =  'param2/1/com.alibaba.trade/alibaba.trade.createCrossOrder/' . config('caribarang.app_key_1688');
             $query = [
                 'addressParam' => config('warehouseaddress.shijing.address'),
                 'cargoParamList' => $items,
                 'tradeType' => 'fxassure',
                 'flow' => 'general',
-                'message' => sprintf(config('warehouseaddress.shijing.note'), $order->order_number),
+                'message' => sprintf(config('warehouseaddress.shijing.note'), $noteReplace),
                 'access_token'      => $accessToken,
             ];
 
@@ -466,5 +467,66 @@ class Service1688Controller extends Controller{
                 'data' => $e->getMessage()
             ]);
        }
+    }
+
+    public function search(Request $request)
+    {
+        $validator = \Validator::make($request->all(), [
+            'keyword' => 'required',
+        ]);
+        
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => false,
+                'data' => $validator->errors(),
+            ]);
+        }
+
+        try {
+            $keyword = $request->get('keyword');
+            $accessToken = Service1688::token();
+            // alibaba.cross.similar.offer.search
+            $path = 'param2/1/com.alibaba.linkplus/alibaba.cross.similar.offer.search/' . config('caribarang.app_key_1688');
+            $query = [
+                'keywords' => $keyword,
+                'access_token' => $accessToken
+            ];
+            $codeSign = $this->generateSignature($query, $path);
+            $query['_aop_signature'] =  $codeSign;
+
+            $url = config('caribarang.host_1688') . $path;
+            $post = Http::asForm()->post($url, $query);
+            $response = $post->object();
+            return response()->json($response);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'data' => $e->getMessage()
+            ]);
+        }
+    }
+
+    public function category()
+    {
+        try {
+            $accessToken = Service1688::token();
+            $path = 'param2/1/com.alibaba.product/alibaba.category.get/' . config('caribarang.app_key_1688');
+            $query = [
+                'categoryID' => 0,
+                'access_token' => $accessToken
+            ];
+            $codeSign = $this->generateSignature($query, $path);
+            $query['_aop_signature'] =  $codeSign;
+
+            $url = config('caribarang.host_1688') . $path;
+            $post = Http::asForm()->post($url, $query);
+            $response = $post->object();
+            return response()->json($response);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'data' => $e->getMessage()
+            ]);
+        }
     }
 }
