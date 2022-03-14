@@ -35,6 +35,7 @@ class Service1688
         ]);
 
         $response = $response->object();
+        if(isset($response->error_message))  return '';
         $now = Carbon::now();
         Cache::add('access_token_1688', $response->access_token, $now->addHour(9));
         return $response;
