@@ -138,8 +138,7 @@ class Service1688Controller extends Controller{
                 $variant->name_en = $value['name_en'];
                 $variant->cover = $value['image'];
                 $variant->save();
-
-                if($product->variant_type == 'multiple_item'){
+                if($request->get('variant_type') == 'multiple_item'){
                     $variant->items()->createMany(collect($value['items'])->map(function($q)use($variant){
                             return [
                                 'product_variant_id' => $variant->id,
