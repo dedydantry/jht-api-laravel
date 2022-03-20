@@ -30,7 +30,8 @@ class Product extends Model
         'length',
         'is_lartas',
         'variant_type',
-        'last_updated'
+        'last_updated',
+        'created_at'
     ];
 
     public function category()

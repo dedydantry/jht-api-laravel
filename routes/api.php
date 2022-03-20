@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Route;
 */
 Route::group(['prefix' => '1688'], function(){
     Route::post('/',[Service1688Controller::class, 'store'])->name('store.1688');
+    Route::post('/suggest',[Service1688Controller::class, 'storeSuggest'])->name('store.storeSuggest');
     Route::get('/signature',[Service1688Controller::class, 'signature'])->name('signature');
     Route::any('/token',[Service1688Controller::class, 'getToken'])->name('getToken');
     Route::any('/refresh-token',[Service1688Controller::class, 'refreshToken'])->name('refreshToken');

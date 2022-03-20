@@ -10,6 +10,7 @@ use App\Models\Payment1688Log;
 use App\Models\PriceRange;
 use App\Models\Product;
 use App\Models\ProductImage;
+use App\Models\ProductKeyword;
 use App\Models\ProductNote;
 use App\Models\Seller;
 use App\Models\Variant;
@@ -27,7 +28,7 @@ class Service1688Controller extends Controller{
         $productId = $request->get('product_id');
         $path = $request->get('path') .'/'. config('caribarang.app_key_1688');
         $type = $request->get('type');
-        $accessToken = Service1688::token();
+        $accessToken = env('ACCESS_TOKEN_1688'); //Service1688::token();
 
         if($type == 'relation'){
             $queryNoSignature   = [
@@ -39,13 +40,18 @@ class Service1688Controller extends Controller{
                 'productId'           => strval($productId),
                 'access_token'      => $accessToken
             ];
+        }else if($type == 'search'){
+            $queryNoSignature   = [
+                'keyWord'           => $productId,
+                'access_token'      => $accessToken
+            ];
         }
 
         $codeSign = $this->generateSignature($queryNoSignature, $path);
 
         return response()->json([
             'signature' => $codeSign, 
-            'access_token' => Service1688::token(), 
+            'access_token' => $accessToken, 
             'path' => config('caribarang.host_1688') . $path,
             'query' => $queryNoSignature
         ]);
@@ -85,29 +91,35 @@ class Service1688Controller extends Controller{
                ]
             );
             
-            $checkProduct = Product::select('id', 'uuid')->where('product_id_1688', $request->get('product_id'))->first();
-            $product = Product::updateOrCreate(
-               [
-                    'seller_id' => $seller->id,
-                    'category_id' =>  null,
-                    'subcategory_id' => null,
-                    'category_id_1688' => $reqCategory['id'] ?  $reqCategory['id'] : null,
-                    'product_id_1688' => $request->get('product_id'),
-                    'uuid' => $checkProduct ? $checkProduct->uuid : (string) Str::uuid(),
-                    'name' => $request->get('subject')['cn'],
-                    'name_en' => $request->get('subject')['en'],
-                    'price' => $request->get('prices')['fix'],
-                    'price_type' => $request->get('prices')['price_type'],
-                    'stock' => $request->get('stock'),
-                    'moq' => $request->get('moq'),
-                    'cover' => $request->get('images')[0],
-                    'weight' => $request->get('weight'),
-                    'height' => $request->get('height'),
-                    'length' => $request->get('length'),
-                    'variant_type' => $request->get('variant_type'),
-                    'last_updated' => $request->get('last_updated'),
-                ]
-            );
+            $checkProduct = Product::select('id', 'uuid', 'product_id_1688')->where('product_id_1688', $request->get('product_id'))->first();
+            $params = collect([
+                'seller_id' => $seller->id,
+                'category_id' =>  null,
+                'subcategory_id' => null,
+                'category_id_1688' => $reqCategory['id'] ?  $reqCategory['id'] : null,
+                'product_id_1688' => $request->get('product_id'),
+                'uuid' => $checkProduct ? $checkProduct->uuid : (string) Str::uuid(),
+                'name' => $request->get('subject')['cn'],
+                'name_en' => $request->get('subject')['en'],
+                'price' => $request->get('prices')['fix'],
+                'price_type' => $request->get('prices')['price_type'],
+                'stock' => $request->get('stock'),
+                'moq' => $request->get('moq'),
+                'cover' => $request->get('images')[0],
+                'weight' => $request->get('weight'),
+                'height' => $request->get('height'),
+                'length' => $request->get('length'),
+                'variant_type' => $request->get('variant_type'),
+                'last_updated' => $request->get('last_updated'),
+            ]);
+            
+            if($checkProduct){
+                $params = $params->except(['uuid', 'product_id_1688']);
+                Product::where('product_id_1688', $checkProduct->product_id_1688)->update($params->toArray());
+                $product = $checkProduct;
+            }else{
+                $product = Product::create($params->toArray());
+            }
 
             Variant::where('product_id', $product->id)->delete();
             ProductImage::where('product_id', $product->id)->delete();
@@ -480,14 +492,13 @@ class Service1688Controller extends Controller{
                 'data' => $validator->errors(),
             ]);
         }
-
         try {
             $keyword = $request->get('keyword');
-            $accessToken = Service1688::token();
+            $accessToken = env('ACCESS_TOKEN_1688'); //Service1688::token();
             // alibaba.cross.similar.offer.search
-            $path = 'param2/1/com.alibaba.linkplus/alibaba.cross.similar.offer.search/' . config('caribarang.app_key_1688');
+            $path = 'param2/1/com.alibaba.product/alibaba.product.suggest.crossBorder/' . config('caribarang.app_key_1688');
             $query = [
-                'keywords' => $keyword,
+                'keyWord' => $keyword,
                 'access_token' => $accessToken
             ];
             $codeSign = $this->generateSignature($query, $path);
@@ -526,6 +537,39 @@ class Service1688Controller extends Controller{
                 'status' => false,
                 'data' => $e->getMessage()
             ]);
+        }
+    }
+
+    public function storeSuggest(Request $request)
+    {
+        try {
+            DB::beginTransaction();
+            
+            $productRequest = collect( $request->product);
+            $keyword = $request->keyword;
+            $productIdArr = $productRequest->pluck('product_id_1688')->toArray();
+
+            $check = Product::select('id' ,'product_id_1688')->whereIn('product_id_1688', $productIdArr)->get();
+            if(count($check)){
+                $productRequest = $productRequest->whereNotIn('product_id_1688', $check->pluck('product_id_1688'));
+            }
+            Product::insert($productRequest->toArray());
+            $productOnlyId =  $productRequest->pluck('product_id_1688')->toArray();
+            $productInsert = Product::select('id')->whereIn('product_id_1688', $productOnlyId)->get();
+            $keywordParams = $productInsert->map(function($q)use($keyword){
+                return[
+                    'product_id' => $q->id,
+                    'keyword' => $keyword
+                ];
+            });
+            ProductKeyword::insert($keywordParams->toArray());
+            ProductKeyword::whereIn('product_id', $productInsert->pluck('id')->toArray())->searchable();
+            DB::commit();
+            return response()->json($productRequest);
+        } catch (\Exception $th) {
+            DB::rollBack();
+            return response()->json(['error'=>$th->getMessage()]);
+
         }
     }
 }

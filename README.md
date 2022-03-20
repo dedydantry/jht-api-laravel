@@ -64,3 +64,12 @@ If you discover a security vulnerability within Laravel, please send an e-mail t
 ## License
 
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+
+db.createUser( { user: "caribarang_root", pwd: "qwerty#123123#", roles: [ { role: "userAdminAnyDatabase", db: "admin" } ] } )
+mongodb://caribarang_root:qwerty#123123#@8.215.28.69:27017
+mongo "mongodb://caribarang_root@8.215.28.69:27017"
+
+mongo -u caribarang_root -p --authenticationDatabase admin
+
+db.createUser({user: 'admin',pwd: 'qwerty#123123#',roles: [ { role: 'root', db: 'admin' } ]});
+db.createUser({user: 'cr_user',pwd: 'qwerty19121992',roles: [ { role: 'readWrite', db: 'caribarang_mg' } ]});
