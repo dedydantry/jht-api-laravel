@@ -26,9 +26,9 @@ class Service1688Controller extends Controller{
     {
 
         $productId = $request->get('product_id');
-        $path = $request->get('path') .'/'. config('caribarang.app_key_1688');
+        $path =  $request->get('path') .'/'. config('caribarang.app_key_1688_v2');
         $type = $request->get('type');
-        $accessToken = Service1688::token();
+        $accessToken = config('caribarang.access_token_1688');
 
         if($type == 'relation'){
             $queryNoSignature   = [
@@ -36,22 +36,18 @@ class Service1688Controller extends Controller{
                 'access_token'      => $accessToken
             ];
         }else if($type == 'product_detail'){
-            $path =  $request->get('path') .'/'. config('caribarang.app_key_1688_v2');
-            $accessToken = config('caribarang.access_token_1688');
             $queryNoSignature   = [
                 'productId'           => strval($productId),
                 'access_token'      => $accessToken
             ];
         }else if($type == 'search'){
-            $accessToken = config('caribarang.access_token_1688');
-            $path =  $request->get('path') .'/'. config('caribarang.app_key_1688_v2');
             $queryNoSignature   = [
                 'keyWord'           => $productId,
                 'access_token'      => $accessToken
             ];
         }
 
-        $codeSign = $this->generateSignature($queryNoSignature, $path);
+        $codeSign = $this->generateSignature($queryNoSignature, $path,  config('caribarang.app_secret_1688_v2'));
 
         return response()->json([
             'signature' => $codeSign, 
@@ -61,8 +57,9 @@ class Service1688Controller extends Controller{
         ]);
     }
 
-    protected function generateSignature($params, $path)
+    protected function generateSignature($params, $path, $secret = null)
     {
+        $secret = $secret ? $secret : config('caribarang.app_secret_1688');
         foreach ($params as $key => $val) {
             if (is_array($val) OR is_object($val)) {
                 $aliParams[] = $key . json_encode($val);
@@ -74,7 +71,7 @@ class Service1688Controller extends Controller{
         sort($aliParams);
         $sign_str = join('', $aliParams);
         $sign_str = $path . $sign_str;
-        $codeSign = strtoupper(bin2hex(hash_hmac("sha1", $sign_str,  config('caribarang.app_secret_1688'), true)));
+        $codeSign = strtoupper(bin2hex(hash_hmac("sha1", $sign_str,  $secret, true)));
         return $codeSign;
     }
 
