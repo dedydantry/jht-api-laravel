@@ -28,7 +28,7 @@ class Service1688Controller extends Controller{
         $productId = $request->get('product_id');
         $path = $request->get('path') .'/'. config('caribarang.app_key_1688');
         $type = $request->get('type');
-        $accessToken = env('ACCESS_TOKEN_1688'); //Service1688::token();
+        $accessToken = Service1688::token();
 
         if($type == 'relation'){
             $queryNoSignature   = [
@@ -36,11 +36,15 @@ class Service1688Controller extends Controller{
                 'access_token'      => $accessToken
             ];
         }else if($type == 'product_detail'){
+            $path =  $request->get('path') .'/'. config('caribarang.app_key_1688_v2');
+            $accessToken = config('caribarang.access_token_1688');
             $queryNoSignature   = [
                 'productId'           => strval($productId),
                 'access_token'      => $accessToken
             ];
         }else if($type == 'search'){
+            $accessToken = config('caribarang.access_token_1688');
+            $path =  $request->get('path') .'/'. config('caribarang.app_key_1688_v2');
             $queryNoSignature   = [
                 'keyWord'           => $productId,
                 'access_token'      => $accessToken
@@ -494,7 +498,7 @@ class Service1688Controller extends Controller{
         }
         try {
             $keyword = $request->get('keyword');
-            $accessToken = env('ACCESS_TOKEN_1688'); //Service1688::token();
+            $accessToken = Service1688::token();
             // alibaba.cross.similar.offer.search
             $path = 'param2/1/com.alibaba.product/alibaba.product.suggest.crossBorder/' . config('caribarang.app_key_1688');
             $query = [
