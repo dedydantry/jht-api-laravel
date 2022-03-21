@@ -81,6 +81,7 @@ class Service1688Controller extends Controller{
            DB::beginTransaction();
            $reqCategory =  $request->get('category');
            $paramsCategory = $reqCategory['group'];
+           $priceType = $request->get('prices')['price_type'];
 
            Category1688::upsert($paramsCategory, ['category_id_1688']);
    
@@ -103,7 +104,7 @@ class Service1688Controller extends Controller{
                 'name' => $request->get('subject')['cn'],
                 'name_en' => $request->get('subject')['en'],
                 'price' => $request->get('prices')['fix'],
-                'price_type' => $request->get('prices')['price_type'],
+                'price_type' => $priceType,
                 'stock' => $request->get('stock'),
                 'moq' => $request->get('moq'),
                 'cover' => $request->get('images')[0],
@@ -186,7 +187,7 @@ class Service1688Controller extends Controller{
             }
             $product->images()->createMany($imgParams);
 
-            if($product->price_type == 'RANGE'){
+            if($priceType == 'RANGE'){
                 $product->ranges()->createMany($request->get('prices')['ranges']);
             }
 
