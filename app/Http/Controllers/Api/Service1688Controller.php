@@ -96,8 +96,8 @@ class Service1688Controller extends Controller{
             $checkProduct = Product::select('id', 'uuid', 'product_id_1688')->where('product_id_1688', $request->get('product_id'))->first();
             $params = collect([
                 'seller_id' => $seller->id,
-                'category_id' =>  null,
-                'subcategory_id' => null,
+                // 'category_id' =>  null,
+                // 'subcategory_id' => null,
                 'category_id_1688' => $reqCategory['id'] ?  $reqCategory['id'] : null,
                 'product_id_1688' => $request->get('product_id'),
                 'uuid' => $checkProduct ? $checkProduct->uuid : (string) Str::uuid(),
