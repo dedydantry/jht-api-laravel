@@ -310,8 +310,13 @@ class Service1688Controller extends Controller{
                     'offerId' => $productId
                 ];
             });
-            
-            $noteReplace =  $order->user->markingCode ? $order->user->markingCode->marking_code . ' - ' .$order->order_number :  $order->order_number;
+
+            $markingCode = $order->order_number;
+            if($order->user->markingCode){
+                $markingCode = $order->shipping_method == 'sea' ? $order->order_number .' | '. $order->user->markingCode->marking_code_sea : $order->order_number .' | '.$order->user->markingCode->marking_code_air;
+            }
+           
+            $noteReplace = $markingCode;
             $path =  'param2/1/com.alibaba.trade/alibaba.trade.createCrossOrder/' . config('caribarang.app_key_1688');
             $query = [
                 'addressParam' => config('warehouseaddress.shijing.address'),
