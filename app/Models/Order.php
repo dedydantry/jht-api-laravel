@@ -51,4 +51,14 @@ class Order extends Model
     {
         return $this->hasOne(Order1688::class);
     }
+
+    public function orderId1688()
+    {
+        return $this->hasOne(OrderId1688::class);
+    }
+
+    public function orderId1688s()
+    {
+        return $this->hasMany(OrderId1688::class);
+    }
 }

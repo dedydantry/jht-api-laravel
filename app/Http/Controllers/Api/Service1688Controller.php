@@ -5,6 +5,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Admin;
 use App\Models\Category1688;
 use App\Models\Order;
+use App\Models\OrderId1688;
 use App\Models\Payment1688;
 use App\Models\Payment1688Log;
 use App\Models\PriceRange;
@@ -298,7 +299,10 @@ class Service1688Controller extends Controller{
     public function createOrder(Order $order)
     {
         try {
-            if($order->order_id_1688) return response()->json(['status' => false, 'data' => 'Order has created']);
+            $order->load([
+                'OrderId1688'
+            ]);
+            if(count($order->orderId1688)) return response()->json(['status' => false, 'data' => 'Order has created']);
             $order->load(['cart.items', 'user.markingCode']);
             $productId = $order->cart->product_id_1688;
             $accessToken = Service1688::token();
@@ -336,9 +340,10 @@ class Service1688Controller extends Controller{
             $post = Http::asForm()->post($url, $query);
             $response = $post->object();
             if(isset($response->success) && $response->success === true){
-                $order->order_id_1688 = $response->result->orderId;
-                $order->save();
-
+                $orderId1688 = $response->result->orderId;
+                $order->orderId1688()->create([
+                    'order_number' => $orderId1688
+                ]);
                 $total =  $response->result->totalSuccessAmount / 100;
                 $shipppingFee =  $response->result->postFee / 100;
                 $productPrice = $total - $shipppingFee;
@@ -396,7 +401,10 @@ class Service1688Controller extends Controller{
     public function cancelOrder(Order $order)
     {
         try {
-            if(!$order->order_id_1688) return response()->json(['status' => false, 'data' => 'Invalid order_id_1688']);
+            $order->load([
+                'OrderId1688'
+            ]);
+            if(!count($order->orderId1688)) return response()->json(['status' => false, 'data' => 'Order has created']);
             $accessToken = Service1688::token();
             $path =  'param2/1/com.alibaba.trade/alibaba.trade.cancel/' . config('caribarang.app_key_1688');
             $orderId = (int) $order->order_id_1688;
@@ -413,6 +421,7 @@ class Service1688Controller extends Controller{
             $url = config('caribarang.host_1688') . $path;
             $post = Http::asForm()->post($url, $query);
             $response = $post->object();
+            return response()->json($response);
 
             if(isset($response->success) && $response->success === true) {
                 $order->order_id_1688 = null;
@@ -455,7 +464,6 @@ class Service1688Controller extends Controller{
            $orderList = $request->get('order_list');
            $accessToken = Service1688::token();
             
-        //    $path =  'param2/1/com.alibaba.trade/alibaba.crossBorderPay.url.get/' . config('caribarang.app_key_1688');
            $path =  'param2/1/com.alibaba.trade/alibaba.alipay.url.get/' . config('caribarang.app_key_1688');
            $query = [
                'orderIdList' => $orderList,
@@ -470,10 +478,10 @@ class Service1688Controller extends Controller{
            $response = $post->object();
            if(isset($response->success) && ($response->success == 'true' || $response->success === true) ) {
                $payment = Payment1688::create(['link' => $response->payUrl]);
-               Order::whereIn('order_id_1688', $orderList)->update(['payment_1688_id' => $payment->id, 'bulk_payment_at' => now()]);
+               OrderId1688::whereIn('order_number', $orderList)->update(['bulk_payment_id' => $payment->id, 'payment_1688_at' => now()]);
                Payment1688Log::create([
                    'admin_id' => $admin ? $admin->id : 1,
-                   'action' => 'Generate payment link',
+                   'action' => 'Generate payment link :'. $payment->id .' - '. $response->payUrl,
                ]);
                return response()->json(['status'=>true, 'data' => $payment]);
            }
