@@ -302,7 +302,7 @@ class Service1688Controller extends Controller{
             $order->load([
                 'OrderId1688'
             ]);
-            if(count($order->orderId1688)) return response()->json(['status' => false, 'data' => 'Order has created']);
+            if($order->orderId1688) return response()->json(['status' => false, 'data' => 'Order has created']);
             $order->load(['cart.items', 'user.markingCode']);
             $productId = $order->cart->product_id_1688;
             $accessToken = Service1688::token();
@@ -355,7 +355,9 @@ class Service1688Controller extends Controller{
 
                 return response()->json([
                     'status' => true,
-                    'data' => $order
+                    'data' => [
+                        'order_number' => $orderId1688
+                    ]
                 ]);
             }
     
@@ -371,7 +373,10 @@ class Service1688Controller extends Controller{
     public function viewOrder(Order $order)
     {
         try {
-            if(!$order->order_id_1688) return response()->json(['status' => false, 'data' => 'Invalid order_id_1688']);
+            $order->load([
+                'OrderId1688'
+            ]);
+            if($order->orderId1688) return response()->json(['status' => false, 'data' => 'Order has created']);
             $accessToken = Service1688::token();
             $path =  'param2/1/com.alibaba.trade/alibaba.trade.get.buyerView/' . config('caribarang.app_key_1688');
             $orderId = (int) $order->order_id_1688;
@@ -404,7 +409,7 @@ class Service1688Controller extends Controller{
             $order->load([
                 'OrderId1688'
             ]);
-            if(!count($order->orderId1688)) return response()->json(['status' => false, 'data' => 'Order has created']);
+            if($order->orderId1688) return response()->json(['status' => false, 'data' => 'Order has created']);
             $accessToken = Service1688::token();
             $path =  'param2/1/com.alibaba.trade/alibaba.trade.cancel/' . config('caribarang.app_key_1688');
             $orderId = (int) $order->order_id_1688;
