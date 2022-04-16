@@ -27,7 +27,7 @@ class Service1688Controller extends Controller{
     {
 
         $productId = $request->get('product_id');
-        $path =  $request->get('path') .'/'. config('caribarang.app_key_1688_v2');
+        $path =  $request->get('path') .'/'. config('caribarang.app_key_1688');
         $type = $request->get('type');
         $accessToken = config('caribarang.access_token_1688');
 
@@ -48,7 +48,7 @@ class Service1688Controller extends Controller{
             ];
         }
 
-        $codeSign = $this->generateSignature($queryNoSignature, $path,  config('caribarang.app_secret_1688_v2'));
+        $codeSign = $this->generateSignature($queryNoSignature, $path,  config('caribarang.app_secret_1688'));
 
         return response()->json([
             'signature' => $codeSign, 
