@@ -27,10 +27,10 @@ class Service1688Controller extends Controller{
     {
 
         $productId = $request->get('product_id');
-        $path =  $request->get('path') .'/'. config('caribarang.app_key_1688');
+        $path =  $request->get('path') .'/'. config('caribarang.app_key_1688_v2');
         $type = $request->get('type');
         // $accessToken = Service1688::token();
-        $accessToken = config('caribarang.access_token_1688');
+        $accessToken = config('caribarang.access_token_1688_v2');
 
         if($type == 'relation'){
             $queryNoSignature   = [
