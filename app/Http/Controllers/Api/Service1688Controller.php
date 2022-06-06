@@ -377,10 +377,10 @@ class Service1688Controller extends Controller{
             $order->load([
                 'OrderId1688'
             ]);
-            if($order->orderId1688) return response()->json(['status' => false, 'data' => 'Order has created']);
+            if(!$order->orderId1688) return response()->json(['status' => false, 'data' => 'Order has created']);
             $accessToken = Service1688::token();
             $path =  'param2/1/com.alibaba.trade/alibaba.trade.get.buyerView/' . config('caribarang.app_key_1688');
-            $orderId = (int) $order->order_id_1688;
+            $orderId = (int) $order->orderId1688->order_number;
             $query = [
                 'webSite'           => '1688',
                 'orderId'           => $orderId,
