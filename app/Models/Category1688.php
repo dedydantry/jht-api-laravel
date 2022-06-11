@@ -11,10 +11,13 @@ class Category1688 extends Model
 
     protected $table = 'category_1688';
 
-    protected $fillable = [
-        'category_id_1688',
-        'category_id',
-        'name',
-        'name_en'
-    ];
+    public function category()
+    {
+        return $this->belongsTo(Category::class, 'category_id');
+    }
+
+    public function products()
+    {
+        return $this->hasMany(Product::class, 'category_id_1688');
+    }
 }

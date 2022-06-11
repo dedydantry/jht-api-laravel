@@ -11,6 +11,12 @@ class MarkingCode extends Model
 
     protected $fillable = [
         'user_id',
-        'marking_code'
+        'marking_code_air',
+        'marking_code_sea'
     ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 }

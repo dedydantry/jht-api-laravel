@@ -11,7 +11,7 @@ class OrderId1688 extends Model
 
     protected $table = 'order_id_1688';
 
-    protected $fillable =[
+    protected $fillable = [
         'order_id',
         'bulk_payment_at',
         'order_number',

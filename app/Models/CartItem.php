@@ -17,9 +17,11 @@ class CartItem extends Model
         'variant_type',
         'variant_name',
         'variant_item_name',
+        'variant_item_name_cn',
         'spec_id',
         'original_price',
         'final_price',
-        'discount'
+        'discount',
+        'cover'
     ];
 }

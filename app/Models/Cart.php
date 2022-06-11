@@ -17,13 +17,18 @@ class Cart extends Model
         return $this->hasMany(CartItem::class);
     }
 
+    public function product()
+    {
+        return $this->belongsTo(Product::class);
+    }
+
     public function scopeOwner($query)
     {
-       return $query->where('user_id', auth()->user()->id);
+        return $query->where('user_id', auth()->user()->id);
     }
 
     public function scopeCheckout($query)
     {
-       return $query->whereNull('checkout_at');
+        return $query->whereNull('checkout_at');
     }
 }
