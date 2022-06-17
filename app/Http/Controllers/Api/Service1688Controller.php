@@ -100,8 +100,6 @@ class Service1688Controller extends Controller
             $checkProduct = Product::select('id', 'uuid', 'product_id_1688')->where('product_id_1688', $request->get('product_id'))->first();
             $params = collect([
                 'seller_id' => $seller->id,
-                // 'category_id' =>  null,
-                // 'subcategory_id' => null,
                 'category_id_1688' => $reqCategory['id'] ?  $reqCategory['id'] : null,
                 'product_id_1688' => $request->get('product_id'),
                 'uuid' => $checkProduct ? $checkProduct->uuid : (string) Str::uuid(),
@@ -139,8 +137,8 @@ class Service1688Controller extends Controller
             foreach ($variantCollection as $key => $value) {
                 $variant = new Variant();
                 $variant->product_id = $productId;
-                $variant->name = $value['name'];
-                $variant->name_en = $value['name_en'];
+                $variant->name = $value['name'] ?? '--';
+                $variant->name_en = $value['name_en'] ?  $value['name_en'] : $variant->name;
                 $variant->cover = $value['image'];
                 $variant->save();
                 if ($request->get('variant_type') == 'multiple_item') {
@@ -151,8 +149,8 @@ class Service1688Controller extends Controller
                                 'stock' => $q['stock'],
                                 'price' => $q['price'],
                                 'retail_price' => $q['retail_price'],
-                                'name' => $q['name'],
-                                'name_en' => $q['name_en'],
+                                'name' => $q['name'] ?? '--',
+                                'name_en' => $q['name_en'] ?? $q['name'],
                                 'sku_id' => $q['sku_id'],
                                 'spec_id' => $q['spec_id'],
                                 'created_at' => now(),
