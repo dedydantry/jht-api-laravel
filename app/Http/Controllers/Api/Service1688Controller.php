@@ -20,6 +20,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
+use App\Models\OrderLog;
 
 class Service1688Controller extends Controller{
 
@@ -295,8 +296,13 @@ class Service1688Controller extends Controller{
 
     }
 
-    public function createOrder(Order $order)
+    public function createOrder(Request $request, Order $order)
     {
+        $validate = \Validator::make($request->all(), [
+            'email' => 'required',
+        ]);
+        if ($validate->fails()) return response()->json(['status' => false, 'data' => $validate->errors()->first()]);
+
         try {
             $order->load([
                 'OrderId1688'
@@ -337,6 +343,7 @@ class Service1688Controller extends Controller{
 
             $url = config('caribarang.host_1688') . $path;
             $post = Http::asForm()->post($url, $query);
+            $admin = Admin::where('email', $request->get('email'))->first();
             $response = $post->object();
             if(isset($response->success) && $response->success === true){
                 $orderId1688 = $response->result->orderId;
@@ -350,6 +357,14 @@ class Service1688Controller extends Controller{
                     'product_price' => $productPrice,
                     'shipping_fee' => $shipppingFee,
                     'total' => $total
+                ]);
+
+                OrderLog::create([
+                    'order_id' => $order->id,
+                    'admin_id' => $admin->id,
+                    'action' => 'Push Order',
+                    'comment' => 'Push Order',
+                    'created_at' => now()
                 ]);
 
                 return response()->json([
