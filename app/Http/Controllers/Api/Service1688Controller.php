@@ -22,7 +22,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 
 class Service1688Controller extends Controller{
-    
+
     public function signature(Request $request)
     {
 
@@ -52,8 +52,8 @@ class Service1688Controller extends Controller{
         $codeSign = $this->generateSignature($queryNoSignature, $path, config('caribarang.app_secret_1688_v2'));
 
         return response()->json([
-            'signature' => $codeSign, 
-            'access_token' => $accessToken, 
+            'signature' => $codeSign,
+            'access_token' => $accessToken,
             'path' => config('caribarang.host_1688') . $path,
             'query' => $queryNoSignature
         ]);
@@ -86,7 +86,7 @@ class Service1688Controller extends Controller{
            $priceType = $request->get('prices')['price_type'];
 
            Category1688::upsert($paramsCategory, ['category_id_1688']);
-   
+
            $seller = Seller::firstOrCreate(
                ['seller_id_1688' => $request->get('seller_id')],
                [
@@ -94,7 +94,7 @@ class Service1688Controller extends Controller{
                    'address' => $request->get('seller_address')
                ]
             );
-            
+
             $checkProduct = Product::select('id', 'uuid', 'product_id_1688')->where('product_id_1688', $request->get('product_id'))->first();
             $params = collect([
                 'seller_id' => $seller->id,
@@ -114,7 +114,7 @@ class Service1688Controller extends Controller{
                 'variant_type' => $request->get('variant_type'),
                 'last_updated' => $request->get('last_updated'),
             ]);
-            
+
             if($checkProduct){
                 $params = $params->except(['uuid', 'product_id_1688']);
                 Product::where('product_id_1688', $checkProduct->product_id_1688)->update($params->toArray());
@@ -127,7 +127,7 @@ class Service1688Controller extends Controller{
             ProductImage::where('product_id', $product->id)->delete();
             ProductNote::where('product_id', $product->id)->delete();
             PriceRange::where('product_id', $product->id)->delete();
-            
+
             $productId = $product->id;
 
             $variantCollection = collect($request->get('variants'));
@@ -175,7 +175,7 @@ class Service1688Controller extends Controller{
 
             $product->note()->create(['note' => $request->get('description')]);
             $imgCollection = collect($request->get('images'));
-            
+
             $imgParams = $imgCollection->map(function($q){
                 return[
                     'url' => $q,
@@ -305,7 +305,7 @@ class Service1688Controller extends Controller{
             $order->load(['cart.items', 'user.markingCode']);
             $productId = $order->cart->product_id_1688;
             $accessToken = Service1688::token();
-    
+
             $items = $order->cart->items->map(function($q)use($productId){
                 return[
                     'specId' => $q->spec_id,
@@ -315,10 +315,10 @@ class Service1688Controller extends Controller{
             });
 
             $markingCode = $order->order_number;
-            if($order->user->markingCode){
-                $markingCode = $order->shipping_method == 'sea' ? $order->order_number .' | '. $order->user->markingCode->marking_code_sea : $order->order_number .' | '.$order->user->markingCode->marking_code_air;
+            if ($order->user->markingCode) {
+                $markingCode = $order->shipping_method == 'sea' ? $order->user->markingCode->marking_code_sea . ' | ' . $order->order_number : $order->user->markingCode->marking_code_air . ' | ' . $order->order_number;
             }
-           
+
             $noteReplace = $markingCode;
             $path =  'param2/1/com.alibaba.trade/alibaba.trade.createCrossOrder/' . config('caribarang.app_key_1688');
             $query = [
@@ -334,7 +334,7 @@ class Service1688Controller extends Controller{
             $query['_aop_signature'] =  $codeSign;
             $query['addressParam'] = json_encode($query['addressParam']);
             $query['cargoParamList'] = json_encode($query['cargoParamList']);
-    
+
             $url = config('caribarang.host_1688') . $path;
             $post = Http::asForm()->post($url, $query);
             $response = $post->object();
@@ -359,7 +359,7 @@ class Service1688Controller extends Controller{
                     ]
                 ]);
             }
-    
+
             return response()->json(['status' => false, 'data' => $response]);
         } catch (\Exception $e) {
             return response()->json([
@@ -384,14 +384,14 @@ class Service1688Controller extends Controller{
                 'orderId'           => $orderId,
                 'access_token'      => $accessToken,
             ];
-    
+
             $codeSign = $this->generateSignature($query, $path);
             $query['_aop_signature'] =  $codeSign;
-    
+
             $url = config('caribarang.host_1688') . $path;
             $post = Http::asForm()->post($url, $query);
             $response = $post->object();
-        
+
             return response()->json(['status'=>true, 'data' => $response]);
         } catch (\Exception $e) {
             return response()->json([
@@ -399,7 +399,7 @@ class Service1688Controller extends Controller{
                 'data' => $e->getMessage()
             ]);
         }
-       
+
     }
 
     public function cancelOrder(Order $order)
@@ -421,7 +421,7 @@ class Service1688Controller extends Controller{
 
             $codeSign = $this->generateSignature($query, $path);
             $query['_aop_signature'] =  $codeSign;
-    
+
             $url = config('caribarang.host_1688') . $path;
             $post = Http::asForm()->post($url, $query);
             $response = $post->object();
@@ -436,7 +436,7 @@ class Service1688Controller extends Controller{
                     'data' => 'Success to cancel order'
                 ]);
             }
-            
+
 
             return response()->json([
                 'status' => false,
@@ -467,7 +467,7 @@ class Service1688Controller extends Controller{
        try {
            $orderList = $request->get('order_list');
            $accessToken = Service1688::token();
-            
+
            $path =  'param2/1/com.alibaba.trade/alibaba.alipay.url.get/' . config('caribarang.app_key_1688');
            $query = [
                'orderIdList' => $orderList,
@@ -503,7 +503,7 @@ class Service1688Controller extends Controller{
         $validator = \Validator::make($request->all(), [
             'keyword' => 'required',
         ]);
-        
+
         if ($validator->fails()) {
             return response()->json([
                 'status' => false,
@@ -562,7 +562,7 @@ class Service1688Controller extends Controller{
     {
         try {
             DB::beginTransaction();
-            
+
             $productRequest = collect( $request->product);
             $keyword = $request->keyword;
             $productIdArr = $productRequest->pluck('product_id_1688')->toArray();
