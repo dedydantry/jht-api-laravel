@@ -302,7 +302,7 @@ class Service1688Controller extends Controller{
                 'OrderId1688'
             ]);
             if($order->orderId1688) return response()->json(['status' => false, 'data' => 'Order has created']);
-            $order->load(['cart.items', 'user.markingCode']);
+            $order->load(['cart.items', 'user.markingCodes']);
             $productId = $order->cart->product_id_1688;
             $accessToken = Service1688::token();
 
@@ -315,8 +315,13 @@ class Service1688Controller extends Controller{
             });
 
             $markingCode = $order->order_number;
-            if ($order->user->markingCode) {
-                $markingCode = $order->shipping_method == 'sea' ? $order->user->markingCode->marking_code_sea . ' | ' . $order->order_number : $order->user->markingCode->marking_code_air . ' | ' . $order->order_number;
+            if ($order->user->markingCodes) {
+                if($order->shipping_method == 'sea'){
+                    $markingCode = $order->user->markingCodes->where('type', 'SEA')->first();
+                }else{
+                    $markingCode = $order->user->markingCodes->where('type', 'AIR')->first();
+                }
+                $markingCode = $markingCode->marking_code . ' | ' . $order->order_number;
             }
 
             $noteReplace = $markingCode;
