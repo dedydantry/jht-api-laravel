@@ -315,7 +315,7 @@ class Service1688Controller extends Controller{
             });
 
             $markingCode = $order->order_number;
-            if ($order->user->markingCodes) {
+            if (count($order->user->markingCodes)) {
                 if($order->shipping_method == 'sea'){
                     $markingCode = $order->user->markingCodes->where('type', 'SEA')->first();
                 }else{
