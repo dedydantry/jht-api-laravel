@@ -16,6 +16,7 @@ use App\Models\ProductNote;
 use App\Models\Seller;
 use App\Models\Variant;
 use App\Services\Service1688;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -29,9 +30,20 @@ class Service1688Controller extends Controller{
         $productId = $request->get('product_id');
         $path =  $request->get('path') .'/'. config('caribarang.app_key_1688_v2');
         $type = $request->get('type');
-        // $accessToken = Service1688::token();
-        $accessToken = config('caribarang.access_token_1688');
 
+        $now = Carbon::now();
+        $initStart = Carbon::createFromTime(8,0);
+        $start = Carbon::createFromTime(8,0);
+        $end =  $initStart->addHour(4);
+
+        $secretKey = null;
+        if($now->between($start, $end)){
+            $accessToken = Service1688::token();
+        }else{
+            $secretKey = config('caribarang.app_secret_1688_v2');
+            $accessToken = config('caribarang.access_token_1688');
+        }
+        
         if($type == 'relation'){
             $queryNoSignature   = [
                 'productIdList'       => [(int)$productId],
@@ -49,7 +61,7 @@ class Service1688Controller extends Controller{
             ];
         }
 
-        $codeSign = $this->generateSignature($queryNoSignature, $path, config('caribarang.app_secret_1688_v2'));
+        $codeSign = $this->generateSignature($queryNoSignature, $path, $secretKey);
 
         return response()->json([
             'signature' => $codeSign,
