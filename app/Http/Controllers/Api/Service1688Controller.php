@@ -21,6 +21,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
+use App\Models\OrderLog;
 
 class Service1688Controller extends Controller{
 
@@ -43,7 +44,7 @@ class Service1688Controller extends Controller{
             $secretKey = config('caribarang.app_secret_1688_v2');
             $accessToken = config('caribarang.access_token_1688');
         }
-        
+
         if($type == 'relation'){
             $queryNoSignature   = [
                 'productIdList'       => [(int)$productId],
@@ -307,14 +308,22 @@ class Service1688Controller extends Controller{
 
     }
 
-    public function createOrder(Order $order)
+    public function createOrder(Request $request, Order $order)
     {
+        $validate = \Validator::make($request->all(),[
+            'email' => 'required',
+            'addressParams' => 'required',
+            'marking_code' => 'required',
+            'note' => 'required',
+        ]);
+        if($validate->fails()) return response()->json(['status' => false, 'data' => $validate->errors()->first()]);
         try {
             $order->load([
                 'OrderId1688'
             ]);
             if($order->orderId1688) return response()->json(['status' => false, 'data' => 'Order has created']);
-            $order->load(['cart.items', 'user.markingCodes']);
+            $order->load(['cart.items']);
+            // $order->load(['cart.items', 'user.markingCodes']);
             $productId = $order->cart->product_id_1688;
             $accessToken = Service1688::token();
 
@@ -326,24 +335,27 @@ class Service1688Controller extends Controller{
                 ];
             });
 
-            $markingCode = $order->order_number;
-            if (count($order->user->markingCodes)) {
-                if($order->shipping_method == 'sea'){
-                    $markingCode = $order->user->markingCodes->where('type', 'SEA')->first();
-                }else{
-                    $markingCode = $order->user->markingCodes->where('type', 'AIR')->first();
-                }
-                $markingCode = $markingCode->marking_code . ' | ' . $order->order_number;
-            }
+            // $markingCode = $order->order_number;
+            // if (count($order->user->markingCodes)) {
+            //     if($order->shipping_method == 'sea'){
+            //         $markingCode = $order->user->markingCodes->where('type', 'SEA')->first();
+            //     }else{
+            //         $markingCode = $order->user->markingCodes->where('type', 'AIR')->first();
+            //     }
+            //     $markingCode = $markingCode->marking_code . ' | ' . $order->order_number;
+            // }
 
-            $noteReplace = $markingCode;
+            // $noteReplace = $markingCode;
+            $noteReplace = $request->marking_code | $order->order_number;
             $path =  'param2/1/com.alibaba.trade/alibaba.trade.createCrossOrder/' . config('caribarang.app_key_1688');
             $query = [
-                'addressParam' => config('warehouseaddress.shijing.address'),
+                // 'addressParam' => config('warehouseaddress.shijing.address'),
+                'addressParam' => $request->addressParams,
                 'cargoParamList' => $items,
                 'tradeType' => 'fxassure',
                 'flow' => 'general',
-                'message' => sprintf(config('warehouseaddress.shijing.note'), $noteReplace),
+                // 'message' => sprintf(config('warehouseaddress.shijing.note'), $noteReplace),
+                'message' => $noteReplace . ' ' . $request->note,
                 'access_token'      => $accessToken,
             ];
 
@@ -355,6 +367,7 @@ class Service1688Controller extends Controller{
             $url = config('caribarang.host_1688') . $path;
             $post = Http::asForm()->post($url, $query);
             $response = $post->object();
+            $admin = Admin::where('email', $request->get('email'))->first();
             if(isset($response->success) && $response->success === true){
                 $orderId1688 = $response->result->orderId;
                 $order->orderId1688()->create([
@@ -367,6 +380,14 @@ class Service1688Controller extends Controller{
                     'product_price' => $productPrice,
                     'shipping_fee' => $shipppingFee,
                     'total' => $total
+                ]);
+
+                OrderLog::create([
+                    'order_id' => $order->id,
+                    'admin_id' => $admin->id,
+                    'action' => 'Push Order',
+                    'comment' => 'Push Order ' . $request->marking_code . '-' . $request->note,
+                    'created_at' => now()
                 ]);
 
                 return response()->json([
