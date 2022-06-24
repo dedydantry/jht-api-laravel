@@ -346,7 +346,7 @@ class Service1688Controller extends Controller{
             // }
 
             // $noteReplace = $markingCode;
-            $noteReplace = $request->marking_code | $order->order_number;
+            $noteReplace = $request->marking_code  .' | ' . $order->order_number;
             $path =  'param2/1/com.alibaba.trade/alibaba.trade.createCrossOrder/' . config('caribarang.app_key_1688');
             $query = [
                 // 'addressParam' => config('warehouseaddress.shijing.address'),
