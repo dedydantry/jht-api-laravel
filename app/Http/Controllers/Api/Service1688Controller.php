@@ -34,7 +34,7 @@ class Service1688Controller extends Controller{
         $now = Carbon::now();
         $initStart = Carbon::createFromTime(8,0);
         $start = Carbon::createFromTime(8,0);
-        $end =  $initStart->addHour(4);
+        $end =  $initStart->addHour(2);
 
         $secretKey = null;
         if($now->between($start, $end)){
@@ -43,7 +43,7 @@ class Service1688Controller extends Controller{
             $secretKey = config('caribarang.app_secret_1688_v2');
             $accessToken = config('caribarang.access_token_1688');
         }
-        
+
         if($type == 'relation'){
             $queryNoSignature   = [
                 'productIdList'       => [(int)$productId],
