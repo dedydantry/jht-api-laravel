@@ -35,7 +35,7 @@ class Service1688Controller extends Controller{
         $now = Carbon::now();
         $initStart = Carbon::createFromTime(8,0);
         $start = Carbon::createFromTime(8,0);
-        $end =  $initStart->addHour(4);
+        $end =  $initStart->addHour(2);
 
         $secretKey = null;
         if($now->between($start, $end)){
