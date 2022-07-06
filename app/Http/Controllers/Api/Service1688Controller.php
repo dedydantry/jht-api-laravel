@@ -29,7 +29,6 @@ class Service1688Controller extends Controller{
     {
 
         $productId = $request->get('product_id');
-        $path =  $request->get('path') .'/'. config('caribarang.app_key_1688_v2');
         $type = $request->get('type');
 
         $now = Carbon::now();
@@ -40,9 +39,12 @@ class Service1688Controller extends Controller{
         $secretKey = null;
         if($now->between($start, $end)){
             $accessToken = Service1688::token();
+            $path =  $request->get('path') .'/'. config('caribarang.app_key_1688');
+
         }else{
             $secretKey = config('caribarang.app_secret_1688_v2');
             $accessToken = config('caribarang.access_token_1688');
+            $path =  $request->get('path') .'/'. config('caribarang.app_key_1688_v2');
         }
 
         if($type == 'relation'){
